@@ -1,0 +1,13 @@
+; Tools.csv
+; Contains information about tools supported by script.
+;Short Name, Filename, Program Name
+CScript,CScript.exe,Microsoft Windows Script Host
+Choice,CHOICE.EXE,Microsoft Windows Choice.exe
+FindStr,findstr.exe,Microsoft Windows FindStr Command
+Mode,mode.com,Microsoft Windows mode.com
+Svn,svn.exe,Subversion Command Line
+Xcopy,xcopy.exe,xcopy Utility
+SubWCRev,SubWCRev.exe,TortoiseSVN SubWCRev
+Timeout,Timeout.exe,Timeout Utility
+7zip,7z.exe,7-Zip File Archiver
+Rar,Rar.exe,RAR archiver
