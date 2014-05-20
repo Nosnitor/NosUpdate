@@ -1,4 +1,5 @@
 ndBuild.cmd
+VERSION
 Bin\Timeout.exe
 Lib\REPL.BAT
 Res\Tools.csv

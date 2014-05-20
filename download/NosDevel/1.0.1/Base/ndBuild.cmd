@@ -3,9 +3,9 @@
 :: ndBuild.cmd - NosDevel Build Script
 :: Copyright © 2014 Nosnitor, Inc.
 ::
-::  $Rev: 89 $
+::  $Rev: 92 $
 ::  $Author: jsblock $
-::  $Date: 2014-05-19 02:35:12 -0700 (Mon, 19 May 2014) $
+::  $Date: 2014-05-19 18:23:38 -0700 (Mon, 19 May 2014) $
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 @ECHO OFF
@@ -113,10 +113,14 @@ IF /I NOT "%ndDebugKeepTempDir%"=="True" (
     CALL :App.Write "Removing temporary directory..." 6 ndBuild
     IF EXIST "%ndTempDir%" RD /S /Q "%ndTempDir%"
 )
-CALL :Environment.Initialize
 CALL :App.Write "Exiting with exit code %ndExit%" 5  ndBuild
 TITLE %ComSpec%
 POPD
+IF "%ndPerformUpdate%"=="True" (
+    ECHO HELLO
+    ENDLOCAL & %Temp%\ndUpdate\ndBuild\ndUpdate.cmd  & GOTO:EOF
+)
+CALL :Environment.Initialize
 ENDLOCAL & EXIT /B %ndExit%
 GOTO:EOF
 
@@ -797,6 +801,7 @@ SET ndNoPause=
 SET ndNoLogo=
 SET ndOldTarget=
 SET ndOsVer=
+SET ndPerformUpdate=
 SET ndProjectName=
 SET ndSourceDir=
 SET ndToolsAvailable=
@@ -1381,7 +1386,7 @@ CALL :Tool.Verify Svn
 CALL :Tool.Verify FindStr
 "!ndToolSvn!" info > "!ndTempDir!SvnInfo.tmp"
 "!ndToolFindStr!" "^Repository Root: !ndBuildSvn!$" "!ndTempDir!SvnInfo.tmp"> NUL
-::IF !ErrorLevel! EQU 0 CALL :App.Write "Skipping update check, running from a NosDevel working copy." 3 Update.Check& GOTO:EOF
+IF !ErrorLevel! EQU 0 CALL :App.Write "Skipping update check, running from a NosDevel working copy." 3 Update.Check& GOTO:EOF
 CALL :Internet.Check
 IF !ndExit! EQU 199 (
     CALL :App.Write "Cannot check for updates, internet is not available." 4 Update.Check
@@ -1414,8 +1419,7 @@ CALL :App.Write "Downloading update..." 3
 CALL :Console.UpdateTitle "Downloading update"
 IF NOT EXIST "!ndTempDir!Update.conf" CALL :App.Error "Unable to locate update file." 255 "Update.Download"
 CALL :Config.ReadSetting "!ndTempDir!Update.conf" UpdatePath ndUpdatePath
-CALL :Config.ReadSetting "!ndTempDir!Update.conf" FileList ndUpdateFileList
-CALL :File.Download !ndUpdateServer!!ndUpdateFileList! "!ndTempDir!Update-FileList.csv"
+CALL :File.Download !ndUpdateServer!!ndUpdatePath!Base/Res/Files.csv "!ndTempDir!Update-FileList.csv"
 SET ndUpdateOutputDir=%Temp%\ndUpdate\ndBuild\
 FOR /F "tokens=1 delims=," %%i in ('TYPE "!ndTempDir!Update-FileList.csv"') DO (
     CALL :File.GetDirectory ndUpdateTempDir !ndUpdateOutputDir!%%i
@@ -1436,12 +1440,14 @@ GOTO:EOF
 :Update.Install
 CALL :App.Write "Installing update..." 3
 CALL :Console.UpdateTitle "Installing update"
+CALL :Tool.Verify Xcopy
 ECHO @ECHO OFF> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
-ECHO ECHO THIS IS RUNNING>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
-ECHO CALL !ndBuildDir!ndBuild.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
-ECHO MD !ndTempDir!> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
-::ECHO ECHO RMDIR /S /Q %Temp%\ndUpdate\ndBuild\^>!ndTempDir!UpdateComplete.cmd> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO :Update.Install> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO ECHO Uninstalling current version...>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO !ndToolXcopy! !ndXcopyParams! /E "%Temp%\ndUpdate\ndBuild\*.*" "!ndBuildDir!">> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO MD !ndTempDir!>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO ECHO RMDIR /S /Q %Temp%\ndUpdate\ndBuild\^> !ndTempDir!UpdateComplete.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO ECHO !ndBuildDir!ndBuild.cmd^> !ndTempDir!UpdateComplete.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
 ECHO !ndTempDir!UpdateComplete.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
-::%Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+SET ndPerformUpdate=True
 GOTO:EOF
-
