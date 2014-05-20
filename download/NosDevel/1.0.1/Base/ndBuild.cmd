@@ -3,9 +3,9 @@
 :: ndBuild.cmd - NosDevel Build Script
 :: Copyright © 2014 Nosnitor, Inc.
 ::
-::  $Rev: 93 $
+::  $Rev: 95 $
 ::  $Author: jsblock $
-::  $Date: 2014-05-20 06:35:05 -0700 (Tue, 20 May 2014) $
+::  $Date: 2014-05-20 06:58:20 -0700 (Tue, 20 May 2014) $
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 @ECHO OFF
@@ -93,9 +93,7 @@ If "%ndDoExit%"=="True" GOTO End
 :: Check for updates
 CALL :Console.UpdateTitle "Checking for updates"
 CALL :Update.Check
-
-PAUSE
-GOTO End
+IF "%ndPerformUpdate%"=="True" GOTO End
 
 SET ndNavTarget=Menu.DisplayMain
 SET ndOldTarget=Initialization
@@ -1444,10 +1442,12 @@ CALL :Tool.Verify Xcopy
 ECHO @ECHO OFF> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
 ECHO :Update.Install> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
 ECHO ECHO Uninstalling current version...>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
-ECHO !ndToolXcopy! !ndXcopyParams! /E "%Temp%\ndUpdate\ndBuild\*.*" "!ndBuildDir!">> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO !ndToolXcopy! !ndXcopyParams! /E /EXCLUDE:"%Temp%\ndUpdate\ndBuild\ExcludedFiles.txt" "%Temp%\ndUpdate\ndBuild\*.*" "!ndBuildDir!">> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
 ECHO MD !ndTempDir!>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
 ECHO ECHO RMDIR /S /Q %Temp%\ndUpdate\ndBuild\^> !ndTempDir!UpdateComplete.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
 ECHO ECHO !ndBuildDir!ndBuild.cmd^> !ndTempDir!UpdateComplete.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
 ECHO !ndTempDir!UpdateComplete.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO ndUpdate.cmd> %Temp%\ndUpdate\ndBuild\ExcludedFiles.txt
+ECHO ExcludedFiles.txt>> %Temp%\ndUpdate\ndBuild\ExcludedFiles.txt
 SET ndPerformUpdate=True
 GOTO:EOF
