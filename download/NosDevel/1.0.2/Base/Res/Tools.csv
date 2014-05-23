@@ -1,0 +1,7 @@
+; Tools.csv
+; Contains information about tools supported by script.
+;Short Name, Filename, Program Name
+Svn,svn.exe,Subversion Command Line
+SubWCRev,SubWCRev.exe,TortoiseSVN SubWCRev
+7zip,7z.exe,7-Zip File Archiver
+Rar,Rar.exe,RAR archiver

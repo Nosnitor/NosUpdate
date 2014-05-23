@@ -3,9 +3,9 @@
 :: ndBuild.cmd - NosDevel Build Script
 :: Copyright © 2014 Nosnitor, Inc.
 ::
-::  $Rev: 79 $
+::  $Rev: 102 $
 ::  $Author: jsblock $
-::  $Date: 2014-05-10 16:30:33 -0700 (Sat, 10 May 2014) $
+::  $Date: 2014-05-23 11:08:18 -0700 (Fri, 23 May 2014) $
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 @ECHO OFF
@@ -33,6 +33,7 @@ CALL :App.GetVersion
 
 :: Process command line arguments
 CALL :App.Write  "Processing command line arguments..." 6 Init
+SET ndCmdLineArgs=%*
 CALL :Environment.CheckArguments %*
 IF %ndExit% NEQ 0 GOTO End
 
@@ -53,6 +54,8 @@ CALL :App.CreateTempDir
 :: Verify required files present
 CALL :App.Write "Checking installation..." 6 Init
 CALL :Install.Check
+IF %ndExit% NEQ 0 GOTO End
+CALL :Environment.CheckRequired
 IF %ndExit% NEQ 0 GOTO End
 
 :: Read global configuration
@@ -89,6 +92,11 @@ IF NOT "%ndConfig%"=="" (
 )
 If "%ndDoExit%"=="True" GOTO End
 
+:: Check for updates
+CALL :Console.UpdateTitle "Checking for updates"
+CALL :Update.Check
+IF "%ndPerformUpdate%"=="True" GOTO End
+
 SET ndNavTarget=Menu.DisplayMain
 SET ndOldTarget=Initialization
 :AppStart
@@ -101,148 +109,19 @@ GOTO AppStart
 :End
 CALL :App.Write "Performing graceful shutdown..." 6 ndBuild
 IF /I NOT "%ndDebugKeepTempDir%"=="True" (
-:: Remove Temp Directory
-CALL :App.Write "Removing temporary directory..." 6 ndBuild
-IF EXIST "%ndTempDir%" RD /S /Q "%ndTempDir%"
+    :: Remove Temp Directory
+    CALL :App.Write "Removing temporary directory..." 6 ndBuild
+    IF EXIST "%ndTempDir%" RD /S /Q "%ndTempDir%"
 )
-CALL :Environment.Initialize
 CALL :App.Write "Exiting with exit code %ndExit%" 5  ndBuild
 TITLE %ComSpec%
 POPD
-ENDLOCAL & EXIT /B %ndExit%
-GOTO:EOF
-
-
-
-
-
-
-
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:: Build.AssemblyInfo
-:: Builds assembly info from a configuration file.
-::
-:: Arguments:
-::	%1  <AssemblyInfoConfig> The configuration file that contains the assembly
-::                           info configuration.
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:Build.AssemblyInfo <AssemblyInfoConfig>
-SET ndNavTarget=%ndOldTarget%
-SET ndOldTarget=BuildAssemblyInfo
-CALL :Console.UpdateTitle "Building AssemblyInfo"
-CALL :App.Write "Processing Build.AssemblyInfo action..." 3 Build.AssemblyInfo
-
-:: Verify configuration file exists
-IF NOT EXIST "%~1" CALL :App.Err  "'%~1' does not exist." 255 Build.AssemblyInfo & GOTO:EOF
-CALL :App.Write "Using '%~1'." 5 Build.AssemblyInfo
-
-CALL :Config.ReadSetting "%~1" Version-Major ndVerTemp
-SET ndVersionShort=!ndVerTemp!
-CALL :Config.ReadSetting "%~1" Version-Minor ndVerTemp
-SET ndVersionShort=!ndVersionShort!.!ndVerTemp!
-CALL :Config.ReadSetting "%~1" Version-Revision ndVerTemp
-SET ndVersionShort=!ndVersionShort!.!ndVerTemp!
-CALL :Config.ReadSetting "%~1" Version-Build ndVerTemp
-SET ndVersion=!ndVersionShort!.!ndVerTemp!
-SET ndVerTemp=
-CALL :App.Write "Version.conf supplied version as %ndVersion%" 7 Build.AssemblyInfo
-
-ECHO %ndVersion% | find "SvnRev" > NUL 2>&1
-IF !ErrorLevel! EQU 0 (
-
-:: Verify tools supported
-CALL :Tool.Verify SubWCRev
-
-REM Determine if working copy is latest revision and not modified.
-REM TODO Set this path based off something else.
-SubWCRev.exe "%~dp0.." -nNm > %ndTempDir%SubWCRev-Version.output 
-
-CALL :App.Write "SubWCRev exited with code !ErrorLevel!" 5 Build.AssemblyInfo
-IF !ErrorLevel! EQU 7 CALL :App.Error "Unable to update build version. Working copy has local modifications." 255 Build.AssemblyInfo True & GOTO EndBuildVersion
-IF !ErrorLevel! EQU 8 CALL :App.Error "Unable to update build version. Working copy contains mixed versions." 255 Build.AssemblyInfo True & GOTO EndBuildVersion
-IF !ErrorLevel! EQU 11 CALL :App.Error "Unable to update build version. Working copy has unversioned items." 255 Build.AssemblyInfo True & GOTO EndBuildVersion
-IF !ErrorLevel! NEQ 0 CALL :App.Error "Unable to update build version. Unknown error." 255 Build.AssemblyInfo True & TYPE %ndTempDir%SubWCRev-Version.output & GOTO EndBuildVersion
-FOR /F "tokens=4 delims= " %%A IN ('TYPE %ndTempDir%SubWCRev-Version.output ^| find "Updated to revision "') DO CALL :App.Write "Working Copy Revision: %%A" 7 Build.AssemblyInfo & SET ndVersion=!ndVersion:SvnRev=%%A!
+IF "%ndPerformUpdate%"=="True" (
+    ECHO HELLO
+    ENDLOCAL & %Temp%\ndUpdate\ndBuild\ndUpdate.cmd  & GOTO:EOF
 )
-
-:EndBuildVersion
-IF %ndExit% NEQ 0 ECHO Using "0" for version build. & SET ndVersion=%ndVersion:SvnRev=0%& SET ndExit=0
-ECHO Application Version: v!ndVersion!
-
-:: Process AssemblyInfo actions
-SET ndLastActionFile=!ndActionFile!
-CALL :Config.ReadSetting "%~1" Action-File ndActionFile
-IF NOT "!ndLastActionFile!"=="!ndActionFile!" CALL :Action.RunFile "!ndConfigDir!!ndActionFile!"
-SET ndActionFile=!ndLastActionFile!
-GOTO:EOF
-
-:VersionOutput <OutputFile>
-CALL :GetPathFromRelativeFile ndTempVersionOutput "%~1"
-CALL :App.Write "Outputting version [%ndVersion%] to file '!ndTempVersionOutput!'" 7 VersionOutput
-ECHO %ndVersion%> !ndTempVersionOutput!
-SET ndTempVersionOutput=
-GOTO:EOF
-
-
-
-
-
-
-
-
-
-
-
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:: Pause
-:: Pauses execution of the script, unless the nopause argument was passed.
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:Pause
-IF /I NOT "%ndNoPause%"=="True" PAUSE
-GOTO:EOF
-
-
-
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:: InformationLabel
-:: Writes debug information to the console.
-:: 
-:: Arguments:
-::  %1 - Message aligned to the left
-::  %2 - Message aligned to the right
-::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:InformationLabel <string1> <string2>
-SETLOCAL
-SET /A ndUsableSpace=ndConsoleWidth - 1
-SET String1=%~1
-SET String1Len=
-CALL :String.Length String1Len "!String1!"
-SET String2=%~2
-SET String2Len=
-CALL :String.Length String2Len "!String2!"
-CALL :PadStringEnd String1 !ndConsoleWidth!
-SET /A String1Len=ndUsableSpace - String2Len
-CALL SET InformationLabel=%%String1:~0,%String1Len%%%%String2%
-ECHO %InformationLabel%
-ENDLOCAL
-GOTO:EOF
-
-
-:PadStringEnd
-CALL :Char.Repeat ndPadStringTemp " " %~2
-SET "%~1=!%~1!!ndPadStringTemp!"
-SET "ndPadStringTemp="
-GOTO:EOF
-
-
-
-
-
-
-
-:GetPathFromRelativeFile <VariableName> <File>
-CALL :App.Write "Using %~dpnx2" 8 GetPathFromRelativeFile
-SET %~1=%~dpnx2
+CALL :Environment.Initialize
+ENDLOCAL & EXIT /B %ndExit%
 GOTO:EOF
 
 
@@ -327,20 +206,23 @@ FOR /F "tokens=1,2,3,4 delims=," %%i in ('TYPE "%~1"') DO (
         SET ndActionValid=True
     )    
     IF /I "%%i"=="File.Copy" (
-        CALL :Tool.Verify Xcopy
         CALL :App.Write "Copying: %%j to %%k" 8
         CALL :Console.UpdateTitle "Copying file %%j"
         IF NOT EXIST "%%~dpk" MD "%%~dpk"
         CALL :File.Touch "%%k"
-        !ndToolXcopy! "%%j" "%%k" /I %ndXcopyParams%
+        %ndUtilXcopy% "%%j" "%%k" /I %ndXcopyParams%
         SET ndActionValid=True
     )
     IF /I "%%i"=="File.Touch" (
         CALL :File.Touch "%%j"
         SET ndActionValid=True
     )
+    IF /I "%%i"=="Output.Version" (
+        CALL :Output.Version "%%j"
+        SET ndActionValid=True
+    )
     IF /I "%%i"=="Timeout" (
-        !ndBuildDir!Bin\Timeout.exe /NoLogo /t %%j
+        %ndUtilTimeout% /NoLogo /t %%j
         SET ndActionValid=True
     )
     IF /I "%%i"=="Tool.Find" (
@@ -356,11 +238,6 @@ FOR /F "tokens=1,2,3,4 delims=," %%i in ('TYPE "%~1"') DO (
         CALL :Config.ReadFile "%%j"
         SET ndActionValid=True
     )
-    IF /I "%%i"=="VersionOutput" (
-        CALL :VersionOutput "%%j"
-        SET ndActionValid=True
-    )
-
     IF NOT "!ndActionValid!"=="True" CALL :App.Error "%~nx1 Unknown action: %%i" 254
     SET ndActionValid=
     IF NOT 0!ndExit! EQU 0 CALL :App.Error "Unhandled error in action %%i" 254 Action.RunFile True & SET ndDoExit=True
@@ -370,6 +247,10 @@ FOR /F "tokens=1,2,3,4 delims=," %%i in ('TYPE "%~1"') DO (
 GOTO:EOF
 
 
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: App.CreateTempDir
+:: Creates the temporary directory.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :App.CreateTempDir
 CALL :App.Write "Creating temporary directory..." 7 App.CreateTempDir
 IF EXIST "%ndTempDir%" (
@@ -382,13 +263,21 @@ IF EXIST "%ndTempDir%" (
 MD "%ndTempDir%"
 GOTO:EOF
 
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: App.Error
 :: Error handler/logger/notification for script.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :App.Error <ErrorMessage> <ErrorLevel> <Category> <NoPause>
     CALL :App.Write "%~1" 1 "%~3" "%~4"
     SET ndExit=%~2
 GOTO:EOF
 
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: App.GetVersion
+:: Gets the scripts version from the VERSION file.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :App.GetVersion
 IF EXIST "!ndBuildDir!VERSION" (
     SET /P ndVersion=< "!ndBuildDir!VERSION"
@@ -401,6 +290,11 @@ SET ndVersionShort=%ndVersion:~0,5%
 CALL :App.Write "Version !ndVersion!" 7 App.GetVersion
 GOTO:EOF
 
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: App.Write
+:: Writes a message to the application.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :App.Write <Message> <Level> <Category>
 IF "%~2"=="" (
     SET ndTempAppWrite=3
@@ -410,6 +304,65 @@ IF "%~2"=="" (
 CALL :Console.Write "%~1" "!ndTempAppWrite!" "%~3" "%~4"
 SET ndTempAppWrite=
 GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: Build.AssemblyInfo
+:: Builds assembly info from a configuration file.
+::
+:: Arguments:
+::	%1  <AssemblyInfoConfig> The configuration file that contains the assembly
+::                           info configuration.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Build.AssemblyInfo <AssemblyInfoConfig>
+SET ndNavTarget=%ndOldTarget%
+SET ndOldTarget=BuildAssemblyInfo
+CALL :Console.UpdateTitle "Building AssemblyInfo"
+CALL :App.Write "Processing Build.AssemblyInfo action..." 3 Build.AssemblyInfo
+
+:: Verify configuration file exists
+IF NOT EXIST "%~1" CALL :App.Err  "'%~1' does not exist." 255 Build.AssemblyInfo & GOTO:EOF
+CALL :App.Write "Using '%~1'." 5 Build.AssemblyInfo
+
+CALL :Config.ReadSetting "%~1" Version-Major ndVerTemp
+SET ndVersionShort=!ndVerTemp!
+CALL :Config.ReadSetting "%~1" Version-Minor ndVerTemp
+SET ndVersionShort=!ndVersionShort!.!ndVerTemp!
+CALL :Config.ReadSetting "%~1" Version-Revision ndVerTemp
+SET ndVersionShort=!ndVersionShort!.!ndVerTemp!
+CALL :Config.ReadSetting "%~1" Version-Build ndVerTemp
+SET ndVersion=!ndVersionShort!.!ndVerTemp!
+SET ndVerTemp=
+CALL :App.Write "Version.conf supplied version as %ndVersion%" 7 Build.AssemblyInfo
+
+ECHO %ndVersion% | find "SvnRev" > NUL 2>&1
+IF !ErrorLevel! EQU 0 (
+
+:: Verify tools supported
+CALL :Tool.Verify SubWCRev
+
+REM Determine if working copy is latest revision and not modified.
+REM TODO Set this path based off something else.
+SubWCRev.exe "%~dp0.." -nNm > %ndTempDir%SubWCRev-Version.output 
+
+CALL :App.Write "SubWCRev exited with code !ErrorLevel!" 5 Build.AssemblyInfo
+IF !ErrorLevel! EQU 7 CALL :App.Error "Unable to update build version. Working copy has local modifications." 255 Build.AssemblyInfo True & GOTO Build.AssemblyInfoEnd
+IF !ErrorLevel! EQU 8 CALL :App.Error "Unable to update build version. Working copy contains mixed versions." 255 Build.AssemblyInfo True & GOTO Build.AssemblyInfoEnd
+IF !ErrorLevel! EQU 11 CALL :App.Error "Unable to update build version. Working copy has unversioned items." 255 Build.AssemblyInfo True & GOTO Build.AssemblyInfoEnd
+IF !ErrorLevel! NEQ 0 CALL :App.Error "Unable to update build version. Unknown error." 255 Build.AssemblyInfo True & TYPE %ndTempDir%SubWCRev-Version.output & GOTO Build.AssemblyInfoEnd
+FOR /F "tokens=4 delims= " %%A IN ('TYPE %ndTempDir%SubWCRev-Version.output ^| find "Updated to revision "') DO CALL :App.Write "Working Copy Revision: %%A" 7 Build.AssemblyInfo & SET ndVersion=!ndVersion:SvnRev=%%A!
+)
+:Build.AssemblyInfoEnd
+IF %ndExit% NEQ 0 ECHO Using "0" for version build. & SET ndVersion=%ndVersion:SvnRev=0%& SET ndExit=0
+ECHO Application Version: v!ndVersion!
+
+:: Process AssemblyInfo actions
+SET ndLastActionFile=!ndActionFile!
+CALL :Config.ReadSetting "%~1" Action-File ndActionFile
+IF NOT "!ndLastActionFile!"=="!ndActionFile!" CALL :Action.RunFile "!ndConfigDir!!ndActionFile!"
+SET ndActionFile=!ndLastActionFile!
+GOTO:EOF
+
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: Char.Repeat
@@ -467,16 +420,17 @@ GOTO:EOF
 TYPE "%~1" | FIND "%~2" > "!ndTempDir!ReadSetting.output" 2>&1
 IF !ErrorLevel! NEQ 0 GOTO:EOF
 SET /P ndReadSettingTemp=< "!ndTempDir!ReadSetting.output"
+IF "!ndReadSettingTemp:~0,1!"==";" SET ndReadSettingTemp=& GOTO:EOF
 CALL :String.Length ndLSet "%~2"
 CALL :String.Length ndLVar "!ndReadSettingTemp!"
 SET /A ndLSet=%ndLSet% + 1
 SET /A ndLVar=%ndLVar% - %ndLSet%
 SET ndReadSettingTemp=^!ndReadSettingTemp:~%ndLSet%,%ndLVar%^!
+CALL :App.Write "Read %~2 setting from '%~1': !ndReadSettingTemp!" 7 Config.ReadSetting
 SET %~3=!ndReadSettingTemp!
 SET ndLSet=
 SET ndLVar=
 SET ndReadSettingTemp=
-CALL :App.Write "Read %~2 setting from '%~1': !%~3!" 7 Config.ReadSetting
 GOTO:EOF
 
 
@@ -490,19 +444,18 @@ GOTO:EOF
 ::  %3 - The value of the setting.
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :Config.WriteSetting <ConfigFile> <SettingName> <Value>
-CALL :Tool.Verify CScript
-CALL :Tool.Verify FindStr
+CALL :App.Write "Writing %~2 setting to '%~1'" 8 Config.WriteSetting
 :: Don't write setting if setting exists and value is the same.
-ECHO %~3| !ndBuildDir!Lib\REPL.BAT "\\" "\\" > !ndTempDir!%~nx1.tmp
+ECHO %~3| "%ndUtilReplace%" "\\" "\\" > !ndTempDir!%~nx1.tmp
 SET /P TestString=<!ndTempDir!%~nx1.tmp
-findstr "^%~2=!TestString!$" "%~1" >NUL
+"%ndUtilFindStr%" "^%~2=!TestString!$" "%~1" >NUL
 IF !ErrorLevel! EQU 0 SET TestString=& GOTO:EOF
 SET TestString=
 :: Setting needs to be written
-findstr "^%~2=.*$" "%~1" >NUL
+"%ndUtilFindStr%" "^%~2=.*$" "%~1" >NUL
 IF !ErrorLevel! EQU 0 (
 :: Replace value
-TYPE "%~1" | !ndBuildDir!Lib\REPL.BAT "^%~2=.*$" "%~2=%~3" > !ndTempDir!%~nx1.tmp
+TYPE "%~1" | "%ndUtilReplace%" "^%~2=.*$" "%~2=%~3" > !ndTempDir!%~nx1.tmp
 MOVE !ndTempDir!%~nx1.tmp "%~1" >NUL
 )
 :: Create value
@@ -519,10 +472,42 @@ GOTO:EOF
 :: console window has.
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :Console.GetColumns
-CALL :Tool.Verify "Mode"
-CALL :Tool.Verify "FindStr"
-FOR /F "usebackq tokens=2* delims=: " %%W in (`%ndToolMode% con ^| %ndToolFindStr% Columns`) DO SET ndConsoleWidth=%%W
+FOR /F "usebackq tokens=2* delims=: " %%W in (`%ndUtilMode% con ^| %ndUtilFindStr% Columns`) DO SET ndConsoleWidth=%%W
 CALL :App.Write "Console is %ndConsoleWidth% characters wide" 7 Console.GetColumns
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: Console.InformationLabel
+:: Writes debug information to the console.
+:: 
+:: Arguments:
+::  %1 - Message aligned to the left
+::  %2 - Message aligned to the right
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Console.InformationLabel <string1> <string2>
+SETLOCAL
+SET /A ndUsableSpace=ndConsoleWidth - 1
+SET String1=%~1
+SET String1Len=
+CALL :String.Length String1Len "!String1!"
+SET String2=%~2
+SET String2Len=
+CALL :String.Length String2Len "!String2!"
+CALL :String.PadEnd String1 !ndConsoleWidth!
+SET /A String1Len=ndUsableSpace - String2Len
+CALL SET InformationLabel=%%String1:~0,%String1Len%%%%String2%
+ECHO %InformationLabel%
+ENDLOCAL
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: Console.Pause
+:: Pauses execution of the script, unless the nopause argument was passed.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Console.Pause
+IF /I NOT "%ndNoPause%"=="True" PAUSE
 GOTO:EOF
 
 
@@ -679,7 +664,7 @@ CALL :Environment.CheckOS True
 FOR /F "tokens=1,2,3 delims=," %%i in (!ndBuildDir!Res\Tools.csv) DO (
 CALL :Tool.Find "%%i" "%%j" "%%k" True
 )
-%~dp0Bin\Timeout.exe /T 3 /Q
+%ndUtilTimeout% /T 3 /Q
 GOTO:EOF
 
 :Environment.CheckArgument.Config
@@ -724,7 +709,7 @@ IF /I "%CurArg%"=="-Config" (
     )
     GOTO Environment.CheckArguments
 )
-IF NOT "%CurArg%"=="" CALL :App.Error "Unknown argument '%CurArg%'" 255 Environment.CheckArguments False & ECHO Type "%~nx0" /? for usage. & CALL :Pause & GOTO End
+IF NOT "%CurArg%"=="" CALL :App.Error "Unknown argument '%CurArg%'" 255 Environment.CheckArguments False & ECHO Type "%~nx0" /? for usage. & CALL :Console.Pause & GOTO End
 :Environment.CheckArgumentsDone
 CALL :App.Write "Arguments checked." 7 Environment.CheckArguments
 GOTO:EOF
@@ -748,10 +733,10 @@ SET ndOsVer=Unknown
 
 :: Windows 7
 :: TODO Verify Findstr or find alternative
-VER | findstr /i "6\.1\." > NUL 2>&1
+VER | "%ndUtilFindStr%" /i "6\.1\." > NUL 2>&1
 IF %ErrorLevel% EQU 0 (
 IF "%~1"=="True" (
-CALL :InformationLabel "  Operating System: Windows 7" [OK]
+CALL :Console.InformationLabel "  Operating System: Windows 7" [OK]
 )
 SET ndOsVer=Windows 7
 GOTO Environment.CheckOSDetected
@@ -761,18 +746,62 @@ GOTO Environment.CheckOSDetected
 CALL :App.Write "Operating System: %ndOsVer%" 5 Environment.CheckOS
 IF "%ndOsVer%"=="Unknown" (
     IF "%~1"=="True" (
-        CALL :InformationLabel "  Operating System: Unknown" [ERROR]
+        CALL :Console.InformationLabel "  Operating System: Unknown" [ERROR]
     )
     CALL :App.Error "Unsupported operating system." 255 Environment.CheckOS
 )
 GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: Environment.CheckRequired
+:: Checks that the system includes all required operating system files.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Environment.CheckRequired
+CALL :App.Write "Checking for required operating system files..." 7 Environment.CheckRequired
+CALL :Environment.CheckRequiredFile "%ndUtilChoice%"
+IF !ndExit! NEQ 0 GOTO :Environment.CheckRequired-Error
+CALL :Environment.CheckRequiredFile "%ndUtilCScript%"
+IF !ndExit! NEQ 0 GOTO :Environment.CheckRequired-Error
+CALL :Environment.CheckRequiredFile "%ndUtilFindStr%"
+IF !ndExit! NEQ 0 GOTO :Environment.CheckRequired-Error
+CALL :Environment.CheckRequiredFile "%ndUtilMode%"
+IF !ndExit! NEQ 0 GOTO :Environment.CheckRequired-Error
+CALL :Environment.CheckRequiredFile "%ndUtilWhere%"
+IF !ndExit! NEQ 0 GOTO :Environment.CheckRequired-Error
+:Environment.CheckRequired-Complete
+CALL :App.Write "Required file check complete." 7 Environment.CheckRequired
+GOTO:EOF
+:Environment.CheckRequired-Error
+CALL :App.Error "Error was encountered. {!ndExit!}" 255 Environment.CheckRequired
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: Environment.CheckRequiredFile
+:: Checks that the required operating system file exists.
+::
+:: Arguments:
+::  %1  <Filename>  The file to check.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Environment.CheckRequiredFile <Filename>
+CALL :App.Write "Checking %~1" 7 Environment.CheckRequiredFile
+IF NOT EXIST "%~1" (
+    CALL :App.Error "The system is missing required operating system files. ^(%~nx1^)" 100 Environment.CheckRequiredFile
+)
+GOTO:EOF
+
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: Environment.Default
 :: Sets the default environment values.
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :Environment.Default
-SET ndDebug=9
+IF EXIST "!ndBuildDir!ndBuild.debug" (
+    SET /P ndDebug=< "!ndBuildDir!ndBuild.debug"
+) ELSE (
+    SET ndDebug=3
+)
 CALL :App.Write "ndDebug=!ndDebug!" 6 Init
 SET ndBuildName=ndBuild
 CALL :App.Write "ndBuildName=!ndBuildName!" 6 Init
@@ -784,6 +813,19 @@ SET ndTempMenu=!ndTempDir!Menu.csv
 CALL :App.Write "ndTempMenu=!ndTempMenu!" 6 Init
 SET ndExit=0
 CALL :App.Write "ndExit=!ndExit!" 6 Init
+SET ndUpdateServer=http://update.nosnitor.com
+CALL :App.Write "ndUpdateServer=!ndUpdateServer!" 6 Init
+SET ndBuildSvn=https://nosnitor.svn.cloudforge.com/nosdevel
+CALL :App.Write "ndBuildSvn=!ndBuildSvn!" 6 Init
+SET ndUtilBitsAdmin=%SystemRoot%\System32\bitsadmin.exe
+SET ndUtilChoice=%SystemRoot%\System32\choice.exe
+SET ndUtilCScript=%SystemRoot%\System32\cscript.exe
+SET ndUtilFindStr=%SystemRoot%\System32\findstr.exe
+SET ndUtilMode=%SystemRoot%\System32\mode.com
+SET ndUtilReplace=!ndBuildDir!Lib\REPL.BAT
+SET ndUtilTimeout=!ndBuildDir!Bin\Timeout.exe
+SET ndUtilWhere=%SystemRoot%\System32\where.exe
+SET ndUtilXcopy=%SystemRoot%\System32\xcopy.exe
 GOTO:EOF
 
 
@@ -809,6 +851,7 @@ SET ndNoPause=
 SET ndNoLogo=
 SET ndOldTarget=
 SET ndOsVer=
+SET ndPerformUpdate=
 SET ndProjectName=
 SET ndSourceDir=
 SET ndToolsAvailable=
@@ -862,17 +905,50 @@ GOTO:EOF
 
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:: File.GetDirectory
-:: Poplates <ResultVar> with the directory of a given filename <Path>.
+:: File.Download
+:: Downloads a file from a URL.
 ::
 :: Arguments:
-::  %1  <ResultVar>   The name of the variable to be populated with the 
-::                       value.
-::  %2  <Path>           The path to the file.
+::  %1  <Url>           The URL to download.
+::  %2  <File>          The local file to save to.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:File.Download <Url> <File>
+CALL :App.Write "Downloading %~nx2..." 3 File.Download
+CALL :App.Write "Downloading %~1 to %~2" 6 File.Download
+%ndUtilBitsAdmin% /transfer ndBuild %~1 "%~2" > NUL
+IF !ErrorLevel! EQU 0 CALL :App.Write "File downloaded." 4 File.Download & GOTO:EOF
+%ndUtilChoice% /C YN /M "There was an error downloading the file. Try again"
+IF !ErrorLevel! EQU 1 GOTO File.Download
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: File.GetDirectory
+:: Populates <ResultVar> with the directory of a given filename <Path>.
+::
+:: Arguments:
+::  %1  <ResultVar>     The name of the variable to be populated with the 
+::                      value.
+::  %2  <Path>          The path to the file.
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :File.GetDirectory <ResultVar> <Path>
 CALL :App.Write "Using directory: %~dp2" 7 File.GetDirectory
 SET %~1=%~dp2
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: File.GetFile
+:: Populates <ResultVar> with the file of a given filename <Path>.
+::
+:: Arguments:
+::  %1  <ResultVar>     The name of the variable to be populated with the 
+::                      value.
+::  %2  <Path>          The path to the file.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:File.GetFile <ResultVar> <Path>
+CALL :App.Write "Using %~dpnx2" 8 GetPathFromRelativeFile
+SET %~1=%~dpnx2
 GOTO:EOF
 
 
@@ -911,7 +987,11 @@ GOTO:EOF
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :Install.Check
 CALL :App.Write "Checking installation..." 7 Install.Check
-CALL :Install.CheckFile "!ndBuildDir!Bin\Timeout.exe"
+CALL :Install.CheckFile "!ndBuildDir!VERSION"
+IF !ndExit! NEQ 0 GOTO :Install.Check-Error
+CALL :Install.CheckFile "%ndUtilTimeout%"
+IF !ndExit! NEQ 0 GOTO :Install.Check-Error
+CALL :Install.CheckFile "%ndUtilReplace%"
 IF !ndExit! NEQ 0 GOTO :Install.Check-Error
 CALL :Install.CheckFile "!ndBuildDir!Res\Tools.csv"
 IF !ndExit! NEQ 0 GOTO :Install.Check-Error
@@ -919,7 +999,7 @@ IF !ndExit! NEQ 0 GOTO :Install.Check-Error
 CALL :App.Write "Installation check complete." 7 Install.Check
 GOTO:EOF
 :Install.Check-Error
-CALL :App.Error "Error was encountered. {!ndExit!}" 255
+CALL :App.Error "Error was encountered. {!ndExit!}" 255 Install.Check
 GOTO:EOF
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -933,6 +1013,22 @@ GOTO:EOF
 CALL :App.Write "Checking %~1" 7 Install.CheckFile
 IF NOT EXIST "%~1" (
     CALL :App.Error "The !ndBuildName! installation is corrupt or incomplete. ^(%~nx1^)" 100 Install.CheckFile
+)
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: Internet.Check
+:: Checks the internet connection. Will set ndExit to 
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Internet.Check
+CALL :App.Write "Checking internet connection..." 4 Internet.Check
+PING google.com -n 1 > NUL
+IF !ErrorLevel! EQU 0 (
+    CALL :App.Write "Internet connection detected." 5 Internet.Check
+) ELSE (
+    CALL :App.Write "Internet connection could not be validated." 5 Internet.Check
+    SET ndExit=199
 )
 GOTO:EOF
 
@@ -973,7 +1069,7 @@ SET ndOldTarget=Menu.DisplayMain
 IF NOT "%ndDebug%"=="" (
     CALL :App.Write "Displaying Main Menu..." 7 Menu.DisplayMain
     CALL :App.Write "Waiting for 2 seconds..." 4 Menu.DisplayMain
-    IF 3 LEQ %ndDebug% %~dp0Bin\Timeout.exe /T 2 /Q
+    IF 3 LEQ %ndDebug% %ndUtilTimeout% /T 2 /Q
 )
 CLS
 CALL :Menu.DrawMessage
@@ -990,7 +1086,7 @@ GOTO:EOF
 
 
 :Menu.DrawHeader
-CALL :InformationLabel "NosDevel Build Script" "v%ndVersion%"
+CALL :Console.InformationLabel "NosDevel Build Script" "v%ndVersion%"
 SET /a ndDrawMenuHeaderLen=ndConsoleWidth - 1
 CALL :Char.Repeat ndDrawMenuHeaderTemp "*" !ndDrawMenuHeaderLen!
 CALL :String.Length ndDrawMenuTextLen "%~1"
@@ -1019,10 +1115,9 @@ FOR /F "tokens=1,2,3 delims=," %%i in ('TYPE "%~1"') DO (
         ECHO.
     )
 )
-CALL :Tool.Verify "Choice"
 ECHO.
 IF NOT "!ndMenuOptions!" == "" (
-    CHOICE.EXE /C !ndMenuOptions! /M Selection
+    %ndUtilChoice% /C !ndMenuOptions! /M Selection
     IF !ErrorLevel! EQU 255 CALL :App.Error "Error with menu selection." 255 Menu.DrawMenu
     IF !ErrorLevel! EQU 0 CALL :App.Write "Selection canceled." 9 Menu.DrawMenu
     SET /A ndMenuChoicePos=!ErrorLevel! - 1
@@ -1073,6 +1168,21 @@ GOTO:EOF
 
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: Output.Version
+:: Outputs the application version to a file.
+::
+:: Arguments:
+::  %1  <OutputFile>        The file that is output to.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Output.Version <OutputFile>
+CALL :File.GetFile ndTempVersionOutput "%~1"
+CALL :App.Write "Outputting version [%ndVersion%] to file '!ndTempVersionOutput!'" 7 Output.Version
+ECHO %ndVersion%> !ndTempVersionOutput!
+SET ndTempVersionOutput=
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: String.Length
 :: Determines the length of a string.
 :: 
@@ -1102,6 +1212,17 @@ GOTO:EOF
 
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: String.PadEnd
+:: Pads the end of a string with spaces.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:String.PadEnd
+CALL :Char.Repeat ndPadStringTemp " " %~2
+SET "%~1=!%~1!!ndPadStringTemp!"
+SET "ndPadStringTemp="
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: Tool.Find
 :: Finds a tool using all available means.
 ::
@@ -1117,6 +1238,7 @@ ECHO %ndToolsAvailable% | find "%~1" > NUL 2>&1
 IF !ErrorLevel! EQU 0 GOTO:EOF
 :: Check if tool location has been saved to configuration
 IF DEFINED ndTool%~1 (
+    SET ndToolOrig%~1=!ndTool%~1!
     IF EXIST "!ndTool%~1!" (
         CALL :App.Write "Found %~1: !ndTool%~1! ^(via Config^)" 7 Tool.Find
         SET ndToolsAvailable=%~1 %ndToolsAvailable%
@@ -1138,14 +1260,18 @@ SET ndExit=0
 GOTO :Tool.NotFound
 :Tool.Found
 IF "%~4"=="True" (
-    CALL :InformationLabel "  %~3: %~2" [OK]
+    CALL :Console.InformationLabel "  %~3: %~2" [OK]
 )
-CALL :Config.WriteSetting "!ndBuildDir!Global.conf" "Tool-%~1" "!ndTool%~1!"
+IF NOT "!ndTool%~1!"=="!ndToolOrig%~1!" (
+    CALL :Config.WriteSetting "!ndBuildDir!Global.conf" "Tool-%~1" "!ndTool%~1!"
+)
+SET ndToolOrig%~1=
 GOTO:EOF
 :Tool.NotFound
 IF "%~4"=="True" (
-CALL :InformationLabel "  %~3: Not Found" [WARNING]
+CALL :Console.InformationLabel "  %~3: Not Found" [WARNING]
 )
+SET ndToolOrig%~1=
 GOTO:EOF
 
 
@@ -1183,12 +1309,12 @@ if defined p (
     SET ndTool%~1=!p!
     CALL :App.Write "Found %~1: !ndTool%~1!" 7 Tool.FindInFilesystem
     IF "%~4"=="True" (
-        CALL :InformationLabel "  %~3: %~2" [OK]
+        CALL :Console.InformationLabel "  %~3: %~2" [OK]
     )
     SET ndToolsAvailable=%~1 %ndToolsAvailable%
 ) ELSE (
 IF "%~4"=="True" (
-CALL :InformationLabel "  %~3: Not Found" [WARNING]
+CALL :Console.InformationLabel "  %~3: Not Found" [WARNING]
 )
 SET ndToolsUnavailable=%~1 %ndToolsUnavailable%
 CALL :App.Write "%~1 was not found in the filesystem." 9 Tool.FindInFilesystem
@@ -1215,18 +1341,17 @@ IF %ErrorLevel% EQU 0 GOTO:EOF
 IF EXIST "!ndBuildDir!Res\Tools\%~1-KnownLocations.csv" (
     CALL :App.Write "Searching for tool: %~1" 7 Tool.FindInKnownLocations
     FOR /F "tokens=1,2,3 delims=," %%i in ('TYPE !ndBuildDir!Res\Tools\%~1-KnownLocations.csv') DO (
-        ECHO %%i| !ndBuildDir!Lib\REPL.BAT "%systemroot%" "%SystemRoot%"> !ndTempDir!Repl.tmp
+        ECHO %%i| "%ndUtilReplace%" "%systemroot%" "%SystemRoot%"> !ndTempDir!Repl.tmp
         SET /P ndToolFilename=<!ndTempDir!Repl.tmp
         IF EXIST "!ndToolFilename!" (
             SET ndTool%~1=%%i
-            CALL App.Write "Found %~1: !ndTool%~1!" 7 Tool.FindInKnownLocations
+            CALL :App.Write "Found %~1: !ndTool%~1!" 7 Tool.FindInKnownLocations
             SET ndToolFilename=
             GOTO:EOF
         )
         SET ndToolFilename=
     )
     SET ndExit=1
-
 ) ELSE (
     CALL :App.Write "%~1-KnownLocations.csv was not found." 7 Tool.FindInKnownLocations
     SET ndExit=1
@@ -1250,17 +1375,17 @@ ECHO %ndToolsAvailable% | find "%~1" > NUL 2>&1
 IF %ErrorLevel% EQU 0 GOTO:EOF
 ::Search path for tool
 CALL :App.Write "Searching for tool: %~1" 7 Tool.FindInPath
-WHERE "%~2" > "!ndTempDir!%~1.output" 2>&1
+"%ndUtilWhere%" "%~2" > "!ndTempDir!%~1.output" 2>&1
 IF %ErrorLevel% EQU 0 (
     SET /P ndTool%~1=<"!ndTempDir!%~1.output"
     CALL :App.Write "Found %~1: !ndTool%~1!" 7 Tool.FindInPath
     IF "%~4"=="True" (
-        CALL :InformationLabel "  %~3: %~2" [OK]
+        CALL :Console.InformationLabel "  %~3: %~2" [OK]
     )
     SET ndToolsAvailable=%~1 %ndToolsAvailable%
 ) ELSE (
     IF "%~4"=="True" (
-        CALL :InformationLabel "  %~3: Not Found" [WARNING]
+        CALL :Console.InformationLabel "  %~3: Not Found" [WARNING]
     )
     SET ndToolsUnavailable=%~1 %ndToolsUnavailable%
     CALL :App.Write "%~1 was not found in path." 7 Tool.FindInPath
@@ -1293,4 +1418,80 @@ FOR /F "tokens=1,2,3 delims=," %%i in ('TYPE "!ndBuildDir!Res\Tools.csv" ^| FIND
 )
 IF NOT "!ndToolSupported!"=="True" CALL :App.Error "Unsupported tool %~1" 254 Tool.Verify True
 SET ndToolSupported=
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: Update.Check
+:: Checks for updates to the script.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Update.Check
+CALL :Tool.Verify Svn
+"!ndToolSvn!" info > "!ndTempDir!SvnInfo.tmp"
+"%ndUtilFindStr%" "^Repository Root: !ndBuildSvn!$" "!ndTempDir!SvnInfo.tmp"> NUL
+IF !ErrorLevel! EQU 0 CALL :App.Write "Skipping update check, running from a NosDevel working copy." 3 Update.Check& GOTO:EOF
+CALL :Internet.Check
+IF !ndExit! EQU 199 (
+    CALL :App.Write "Cannot check for updates, internet is not available." 4 Update.Check
+    GOTO:EOF
+)
+CALL :App.Write "Checking for updates..." 3
+CALL :File.Download !ndUpdateServer!/updates/NosDevel/v!ndVersionShort! "!ndTempDir!Update.conf"
+IF EXIST "!ndTempDir!Update.conf" (
+    CALL :Config.ReadSetting "!ndTempDir!Update.conf" UpdateVersion ndUpdateVer
+    IF DEFINED ndUpdateVer (
+        CALL :App.Write "An update is available for this script. [v!ndVersionShort! to v!ndUpdateVer!]" 3 Update.Check
+        %ndUtilChoice% /C YN /M "Would you like to update"
+        IF !ErrorLevel! EQU 1 (
+            IF EXIST "%Temp%\ndUpdate\ndBuild\" ( RMDIR /S /Q "%Temp%\ndUpdate\ndBuild\"> NUL )
+            CALL :Update.Download
+            GOTO:EOF
+        )
+    ) ELSE (
+        CALL :App.Write "You are currently running the latest release." 3 Update.Check
+    )
+)
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: Update.Download
+:: Downloads update to the script.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Update.Download
+CALL :App.Write "Downloading update..." 3
+CALL :Console.UpdateTitle "Downloading update"
+IF NOT EXIST "!ndTempDir!Update.conf" CALL :App.Error "Unable to locate update file." 255 "Update.Download"
+CALL :Config.ReadSetting "!ndTempDir!Update.conf" UpdatePath ndUpdatePath
+CALL :File.Download !ndUpdateServer!!ndUpdatePath!Base/Res/Files.csv "!ndTempDir!Update-FileList.csv"
+SET ndUpdateOutputDir=%Temp%\ndUpdate\ndBuild\
+FOR /F "tokens=1 delims=," %%i in ('TYPE "!ndTempDir!Update-FileList.csv"') DO (
+    CALL :File.GetDirectory ndUpdateTempDir !ndUpdateOutputDir!%%i
+    IF NOT EXIST "!ndUpdateTempDir!" MD "!ndUpdateTempDir!"
+    ECHO %%i| "%ndUtilReplace%" "\\" "/"> "!ndTempDir!DownloadFile.tmp"
+    SET /P ndUpdateWebFile=<"!ndTempDir!DownloadFile.tmp"
+    CALL :File.Download !ndUpdateServer!!ndUpdatePath!Base/!ndUpdateWebFile! !ndUpdateOutputDir!%%i
+    SET ndUpdateWebFile=
+)
+CALL :Update.Install
+GOTO:EOF
+
+
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:: Update.Install
+:: Installs a downloaded update.
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+:Update.Install
+CALL :App.Write "Installing update..." 3
+CALL :Console.UpdateTitle "Installing update"
+ECHO @ECHO OFF> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO :Update.Install> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO ECHO Uninstalling current version...>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO %ndUtilXcopy% %ndXcopyParams% /E "%Temp%\ndUpdate\ndBuild\*.*" "!ndBuildDir!">> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO MD !ndTempDir!>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO DEL /F /Q "!ndBuildDir!ndUpdate.cmd"^>^> !ndTempDir!UpdateComplete.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO ECHO RMDIR /S /Q %Temp%\ndUpdate\ndBuild\^>^> !ndTempDir!UpdateComplete.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO ECHO !ndBuildDir!ndBuild.cmd^> !ndTempDir!UpdateComplete.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+ECHO !ndTempDir!UpdateComplete.cmd>> %Temp%\ndUpdate\ndBuild\ndUpdate.cmd
+SET ndPerformUpdate=True
 GOTO:EOF
