@@ -3,9 +3,9 @@
 :: ndBuild.cmd - NosDevel Build Script
 :: Copyright © 2014 Nosnitor, Inc.
 ::
-::  $Rev: 102 $
+::  $Rev: 105 $
 ::  $Author: jsblock $
-::  $Date: 2014-05-23 11:08:18 -0700 (Fri, 23 May 2014) $
+::  $Date: 2014-05-23 11:20:53 -0700 (Fri, 23 May 2014) $
 ::
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 @ECHO OFF
@@ -117,7 +117,6 @@ CALL :App.Write "Exiting with exit code %ndExit%" 5  ndBuild
 TITLE %ComSpec%
 POPD
 IF "%ndPerformUpdate%"=="True" (
-    ECHO HELLO
     ENDLOCAL & %Temp%\ndUpdate\ndBuild\ndUpdate.cmd  & GOTO:EOF
 )
 CALL :Environment.Initialize
