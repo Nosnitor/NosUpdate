@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<HelpTOC>
+
+  <HelpTOCNode Id="f818832a-6443-4b0f-ac43-29050fb19bb7" Title="Nosnitor" Url="html/N_Nosnitor.htm">
+    <HelpTOCNode Id="fbbc2c51-11a6-41ad-a2fe-7eaca7cbaeca" Title="AssemblyExtension Class" Url="html/T_Nosnitor_AssemblyExtension.htm">
+      <HelpTOCNode Id="73d652b1-1314-475c-8505-9ff3d36b7ee9" Title="AssemblyExtension Methods" Url="html/Methods_T_Nosnitor_AssemblyExtension.htm">
+        <HelpTOCNode Id="204063fc-3e4e-4748-b5f8-f0077b2e82e1" Title="GetAssemblyCompany Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyCompany.htm">
+          <HelpTOCNode Title="GetAssemblyCompany Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyCompany.htm" />
+          <HelpTOCNode Title="GetAssemblyCompany Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyCompany_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="48fb67e9-3680-4463-9ba3-4d71212b5814" Title="GetAssemblyConfiguration Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyConfiguration.htm">
+          <HelpTOCNode Title="GetAssemblyConfiguration Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyConfiguration.htm" />
+          <HelpTOCNode Title="GetAssemblyConfiguration Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyConfiguration_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="c24a188f-412e-4ef0-853e-f09665a3d0ec" Title="GetAssemblyCopyright Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyCopyright.htm">
+          <HelpTOCNode Title="GetAssemblyCopyright Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyCopyright.htm" />
+          <HelpTOCNode Title="GetAssemblyCopyright Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyCopyright_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="6046bd5b-2e8f-40ca-a231-11aa7abd7890" Title="GetAssemblyCulture Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyCulture.htm">
+          <HelpTOCNode Title="GetAssemblyCulture Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyCulture.htm" />
+          <HelpTOCNode Title="GetAssemblyCulture Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyCulture_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="2657c6f2-ec59-4602-aab3-870739f7c31e" Title="GetAssemblyDefaultAlias Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyDefaultAlias.htm">
+          <HelpTOCNode Title="GetAssemblyDefaultAlias Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyDefaultAlias.htm" />
+          <HelpTOCNode Title="GetAssemblyDefaultAlias Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyDefaultAlias_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="92dfd7f4-f857-43e8-8442-31adeea5f5f8" Title="GetAssemblyDescription Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyDescription.htm">
+          <HelpTOCNode Title="GetAssemblyDescription Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyDescription.htm" />
+          <HelpTOCNode Title="GetAssemblyDescription Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyDescription_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="1315e6e1-b8ff-4b7b-af2a-0dede65bb7ae" Title="GetAssemblyFileVersion Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyFileVersion.htm">
+          <HelpTOCNode Title="GetAssemblyFileVersion Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyFileVersion.htm" />
+          <HelpTOCNode Title="GetAssemblyFileVersion Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyFileVersion_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="e223602c-7d3d-4644-9b5c-48df493aa33a" Title="GetAssemblyFlags Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyFlags.htm">
+          <HelpTOCNode Title="GetAssemblyFlags Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyFlags.htm" />
+          <HelpTOCNode Title="GetAssemblyFlags Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyFlags_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="95981c1f-ddcf-4c4f-a649-4e7b45827e68" Title="GetAssemblyInformationalVersion Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyInformationalVersion.htm">
+          <HelpTOCNode Title="GetAssemblyInformationalVersion Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyInformationalVersion.htm" />
+          <HelpTOCNode Title="GetAssemblyInformationalVersion Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyInformationalVersion_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="a2a0e654-cc45-4650-8e4b-e7b87f7bec01" Title="GetAssemblyProduct Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyProduct.htm">
+          <HelpTOCNode Title="GetAssemblyProduct Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyProduct.htm" />
+          <HelpTOCNode Title="GetAssemblyProduct Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyProduct_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="a6c1430d-ebec-4f58-9cf8-c956bb324838" Title="GetAssemblyTitle Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyTitle.htm">
+          <HelpTOCNode Title="GetAssemblyTitle Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyTitle.htm" />
+          <HelpTOCNode Title="GetAssemblyTitle Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyTitle_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="af308bcd-87ac-41d5-a296-351b4399c961" Title="GetAssemblyTrademark Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyTrademark.htm">
+          <HelpTOCNode Title="GetAssemblyTrademark Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyTrademark.htm" />
+          <HelpTOCNode Title="GetAssemblyTrademark Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyTrademark_1.htm" />
+        </HelpTOCNode>
+        <HelpTOCNode Id="7a4f66c9-3792-4e41-8cdb-e66c177e0483" Title="GetAssemblyVersion Method " Url="html/Overload_Nosnitor_AssemblyExtension_GetAssemblyVersion.htm">
+          <HelpTOCNode Title="GetAssemblyVersion Method " Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyVersion.htm" />
+          <HelpTOCNode Title="GetAssemblyVersion Method (Assembly)" Url="html/M_Nosnitor_AssemblyExtension_GetAssemblyVersion_1.htm" />
+        </HelpTOCNode>
+      </HelpTOCNode>
+    </HelpTOCNode>
+    <HelpTOCNode Id="f1936a8f-0f2c-416d-8e6e-f207c13bb399" Title="Comparison Class" Url="html/T_Nosnitor_Comparison.htm">
+      <HelpTOCNode Id="6302b52e-3bde-4616-95e2-479776415307" Title="Comparison Methods" Url="html/Methods_T_Nosnitor_Comparison.htm">
+        <HelpTOCNode Title="ByteArrayCompare Method " Url="html/M_Nosnitor_Comparison_ByteArrayCompare.htm" />
+        <HelpTOCNode Title="IsHexString Method " Url="html/M_Nosnitor_Comparison_IsHexString.htm" />
+      </HelpTOCNode>
+    </HelpTOCNode>
+    <HelpTOCNode Id="15ab5e29-798b-4607-9ea8-d8d06d33f76f" Title="Conversion Class" Url="html/T_Nosnitor_Conversion.htm">
+      <HelpTOCNode Id="988ce15b-82e3-480a-813f-0ee1fe30fe5a" Title="Conversion Methods" Url="html/Methods_T_Nosnitor_Conversion.htm">
+        <HelpTOCNode Title="HexStringToByteArray Method " Url="html/M_Nosnitor_Conversion_HexStringToByteArray.htm" />
+      </HelpTOCNode>
+    </HelpTOCNode>
+    <HelpTOCNode Id="52bc338a-d0cb-4401-aa70-ee51430da806" Title="EnumerationExtension Class" Url="html/T_Nosnitor_EnumerationExtension.htm">
+      <HelpTOCNode Id="07758407-ffdf-4f1b-895f-6dc3e848336b" Title="EnumerationExtension Methods" Url="html/Methods_T_Nosnitor_EnumerationExtension.htm">
+        <HelpTOCNode Title="GetValues(T) Method " Url="html/M_Nosnitor_EnumerationExtension_GetValues__1.htm" />
+      </HelpTOCNode>
+    </HelpTOCNode>
+    <HelpTOCNode Id="06ac128c-e7df-479f-a466-9adbe883ed90" Title="Manipulation Class" Url="html/T_Nosnitor_Manipulation.htm">
+      <HelpTOCNode Id="899e2e73-9fab-46b0-8079-f2213d799d3d" Title="Manipulation Methods" Url="html/Methods_T_Nosnitor_Manipulation.htm">
+        <HelpTOCNode Title="CombineByteArray Method " Url="html/M_Nosnitor_Manipulation_CombineByteArray.htm" />
+      </HelpTOCNode>
+    </HelpTOCNode>
+    <HelpTOCNode Id="00ef3710-c775-4cfa-b98f-3d0b09134cf6" Title="ResourceManagerExtension Class" Url="html/T_Nosnitor_ResourceManagerExtension.htm">
+      <HelpTOCNode Id="3d051374-f9e4-4749-a3a8-69573049fd8b" Title="ResourceManagerExtension Methods" Url="html/Methods_T_Nosnitor_ResourceManagerExtension.htm">
+        <HelpTOCNode Title="GetStringResourceByName Method " Url="html/M_Nosnitor_ResourceManagerExtension_GetStringResourceByName.htm" />
+      </HelpTOCNode>
+    </HelpTOCNode>
+  </HelpTOCNode>
+</HelpTOC>
